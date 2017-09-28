@@ -46,15 +46,15 @@ type AccountBalanceResult struct {
 }
 
 type TickerResult struct {
-	Last         float64 `json:"last,string"`
-	High	     float64 `json:"high,string"`
-	Low          float64 `json:"low,string"`
-	Vwap         float64 `json:"vwap,string"`
-	Volume	     float64 `json:"volume,string"`
-	Bid          float64 `json:"bid,string"`
-	Ask          float64 `json:"ask,string"`
-	Timestamp    string  `json:"timestamp"`
-	Open         float64 `json:"open,string"`
+	Last      float64 `json:"last,string"`
+	High      float64 `json:"high,string"`
+	Low       float64 `json:"low,string"`
+	Vwap      float64 `json:"vwap,string"`
+	Volume    float64 `json:"volume,string"`
+	Bid       float64 `json:"bid,string"`
+	Ask       float64 `json:"ask,string"`
+	Timestamp string  `json:"timestamp"`
+	Open      float64 `json:"open,string"`
 }
 
 type BuyOrderResult struct {
@@ -74,12 +74,12 @@ type SellOrderResult struct {
 }
 
 type OpenOrder struct {
-	Id       int64   `json:"id,string"`
-	DateTime string  `json:"datetime"`
-	Type     int     `json:"type,string"`
-	Price    float64 `json:"price,string"`
-	Amount   float64 `json:"amount,string"`
-	CurrencyPair string `json:"currency_pair"`
+	Id           int64   `json:"id,string"`
+	DateTime     string  `json:"datetime"`
+	Type         int     `json:"type,string"`
+	Price        float64 `json:"price,string"`
+	Amount       float64 `json:"amount,string"`
+	CurrencyPair string  `json:"currency_pair"`
 }
 
 func SetAuth(clientId, key, secret string) {
@@ -111,7 +111,7 @@ func privateQuery(path string, values url.Values, v interface{}) error {
 	reqBody := strings.NewReader(values.Encode())
 
 	// create the request
-	//log.Println(endpoint.String(), values)
+	//fmt.Println(endpoint.String(), values)
 	req, err := http.NewRequest("POST", endpoint.String(), reqBody)
 	if err != nil {
 		return err
@@ -140,14 +140,18 @@ func privateQuery(path string, values url.Values, v interface{}) error {
 	if len(body) == 0 {
 		return fmt.Errorf("Response body 0 length")
 	}
+
 	e := make(map[string]interface{})
 	err = json.Unmarshal(body, &e)
-	if bsEr, ok := e["error"]; ok {
-		return fmt.Errorf("%v", bsEr)
+	if err != nil {
+		return err
+	}
+	if e["status"] == "error" {
+		return fmt.Errorf(fmt.Sprint(e["reason"]))
 	}
 
 	//parse the JSON response into the response object
-	//log.Println(string(body))
+	//fmt.Println(string(body))
 	return json.Unmarshal(body, v)
 }
 
@@ -162,7 +166,7 @@ func AccountBalance() (*AccountBalanceResult, error) {
 
 func Ticker(pair string) (*TickerResult, error) {
 	ticker := &TickerResult{}
-	err := privateQuery("/ticker/" + pair + "/", url.Values{}, ticker)
+	err := privateQuery("/ticker/"+pair+"/", url.Values{}, ticker)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +181,7 @@ func BuyLimitOrder(pair string, amount float64, price float64, amountPrecision, 
 
 	// make request
 	result := &BuyOrderResult{}
-	err := privateQuery("/buy/" + pair + "/", v, result)
+	err := privateQuery("/buy/"+pair+"/", v, result)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +195,7 @@ func BuyMarketOrder(pair string, amount float64) (*BuyOrderResult, error) {
 
 	// make request
 	result := &BuyOrderResult{}
-	err := privateQuery("/buy/market/" + pair + "/", v, result)
+	err := privateQuery("/buy/market/"+pair+"/", v, result)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +210,7 @@ func SellLimitOrder(pair string, amount float64, price float64, amountPrecision,
 
 	// make request
 	result := &SellOrderResult{}
-	err := privateQuery("/sell/" + pair + "/", v, result)
+	err := privateQuery("/sell/"+pair+"/", v, result)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +224,7 @@ func SellMarketOrder(pair string, amount float64) (*SellOrderResult, error) {
 
 	// make request
 	result := &SellOrderResult{}
-	err := privateQuery("/sell/market/" + pair + "/", v, result)
+	err := privateQuery("/sell/market/"+pair+"/", v, result)
 	if err != nil {
 		return nil, err
 	}
