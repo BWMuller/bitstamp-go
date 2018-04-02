@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 var _url string = "https://www.bitstamp.net/api/v2"
@@ -145,7 +147,7 @@ func (b Bitstamp) privateQuery(path string, values url.Values, v interface{}) er
 	// parse the bitstamp URL
 	endpoint, err := url.Parse(_url)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unable to parse URL")
 	}
 
 	// set the endpoint for this request
@@ -166,26 +168,26 @@ func (b Bitstamp) privateQuery(path string, values url.Values, v interface{}) er
 	//log.Println(endpoint.String(), values)
 	req, err := http.NewRequest("POST", endpoint.String(), reqBody)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unable to create http request")
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	// submit the http request
 	r, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Unable to submit http request")
 	}
 
 	// if no result interface, return
 	if v == nil {
-		return nil
+		return errors.Wrap(err, "No result interface provided")
 	}
 
 	// read the body of the http message into a byte array
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error reading message intor byte array")
 	}
 
 	// is this an error?
@@ -193,23 +195,22 @@ func (b Bitstamp) privateQuery(path string, values url.Values, v interface{}) er
 		return fmt.Errorf("Response body 0 length")
 	}
 
-	err = json.Unmarshal(body, &v)
-	if err != nil {
-		return err
-	}
-
 	// Check for status == error
 	errResult := ErrorResult{}
 	err = json.Unmarshal(body, &errResult)
 	if err == nil {
 		if errResult.Status == "error" {
-			return fmt.Errorf("%#v", errResult)
+			return errors.Wrap(fmt.Errorf("%#v", errResult), "Error received in result body")
 		}
 	}
 
 	//parse the JSON response into the response object
 	// log.Println(string(body))
-	return json.Unmarshal(body, v)
+	err = json.Unmarshal(body, v)
+	if err != nil {
+		return errors.Wrap(err, "Unable to unmarshal response body again?")
+	}
+	return nil
 }
 
 // UnmarshalJSON takes a json array and converts it into an OrderBookItem.
