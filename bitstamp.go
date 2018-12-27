@@ -107,6 +107,11 @@ type SellOrderResult struct {
 	Amount   float64 `json:"amount,string"`
 }
 
+type OrderStatusResult struct {
+	Status       string                     `json:"status"`
+	Transactions []AccountTransactionResult `json:"transactions"`
+}
+
 type OrderBookResult struct {
 	Timestamp string          `json:"timestamp"`
 	Bids      []OrderBookItem `json:"bids"`
@@ -348,24 +353,39 @@ func (b Bitstamp) AccountTransactions() ([]AccountTransactionResult, error) {
 
 	ts := make([]AccountTransactionResult, len(internalTs))
 	for i, t := range internalTs {
-		ts[i] = AccountTransactionResult{
-			DateTime: t.DateTime,
-			Id:       t.Id,
-			Type:     t.Type,
-			Usd:      float64(t.Usd),
-			Eur:      float64(t.Eur),
-			Btc:      float64(t.Btc),
-			Xrp:      float64(t.Xrp),
-			Ltc:      float64(t.Ltc),
-			Eth:      float64(t.Eth),
-			BtcUsd:   float64(t.BtcUsd),
-			UsdBtc:   float64(t.UsdBtc),
-			Fee:      float64(t.Fee),
-			OrderId:  t.OrderId,
-		}
+		ts[i] = t.result()
 	}
 
 	return ts, nil
+}
+
+func (b Bitstamp) OrderStatus(orderID int64) (*OrderStatusResult, error) {
+	// set params
+	var v = url.Values{}
+	v.Add("id", strconv.FormatInt(orderID, 10))
+
+	// make request
+	result := struct {
+		Status       string                     `json:"status"`
+		Transactions []accountTransactionResult `json:"transactions"`
+	}{}
+	err := b.privateQuery("/order_status/", v, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	ts := make([]AccountTransactionResult, len(result.Transactions))
+	for i, t := range result.Transactions {
+		ts[i] = t.result()
+
+		// IDs are not returned, set them here for consistency
+		ts[i].OrderId = orderID
+	}
+
+	return &OrderStatusResult{
+		Status:       result.Status,
+		Transactions: ts,
+	}, nil
 }
 
 func (b Bitstamp) CancelAllOrders() (*bool, error) {

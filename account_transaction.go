@@ -65,6 +65,24 @@ type accountTransactionResult struct {
 	OrderId  int64               `json:"order_id"`
 }
 
+func (t *accountTransactionResult) result() AccountTransactionResult {
+	return AccountTransactionResult{
+		DateTime: t.DateTime,
+		Id:       t.Id,
+		Type:     t.Type,
+		Usd:      float64(t.Usd),
+		Eur:      float64(t.Eur),
+		Btc:      float64(t.Btc),
+		Xrp:      float64(t.Xrp),
+		Ltc:      float64(t.Ltc),
+		Eth:      float64(t.Eth),
+		BtcUsd:   float64(t.BtcUsd),
+		UsdBtc:   float64(t.UsdBtc),
+		Fee:      float64(t.Fee),
+		OrderId:  t.OrderId,
+	}
+}
+
 type AccountTransactionResult struct {
 	DateTime string              `json:"datetime"`
 	Id       int64               `json:"id"`
